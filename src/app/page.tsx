@@ -36,7 +36,11 @@ import {
   BarChart3
 } from 'lucide-react'
 import { LanguageSelector } from '@/components/language-selector'
-import { useTranslations } from 'next-intl'
+import { NextIntlClientProvider } from 'next-intl'
+import { useMessages } from 'next-intl'
+
+// Import messages for the default locale
+import hiMessages from '../../messages/hi.json'
 
 interface Issue {
   id: string
@@ -240,7 +244,7 @@ const mockPromises: PoliticalPromise[] = [
   }
 ]
 
-export default function Home() {
+function HomeContent() {
   const [selectedTab, setSelectedTab] = useState('daily')
   const [issues, setIssues] = useState<Issue[]>(mockIssues)
   const [localReports, setLocalReports] = useState<LocalReport[]>(mockLocalReports)
@@ -249,7 +253,7 @@ export default function Home() {
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedParty, setSelectedParty] = useState('all')
   const [selectedCategory, setSelectedCategory] = useState('all')
-  const t = useTranslations()
+  const messages = useMessages()
 
   const getCategoryIcon = (category: string) => {
     switch (category) {
@@ -472,29 +476,30 @@ export default function Home() {
                         <p className="font-bold">{formatNumber(issue.affectedPeople || 0)}</p>
                       </div>
                       <div>
-                        <span className="text-sm text-gray-500">राज्य</span>
-                        <p className="font-bold">{issue.state || 'भारत'}</p>
+                        <span className="text-sm text-gray-500">श्रेणी</span>
+                        <p className="font-bold">{issue.category}</p>
                       </div>
                       <div>
                         <span className="text-sm text-gray-500">प्राथमिकता</span>
-                        <Badge variant="outline">
-                          {issue.priority === 'high' ? 'उच्च' : 
-                           issue.priority === 'medium' ? 'मध्यम' : 'निम्न'}
-                        </Badge>
+                        <Badge variant="outline">{issue.priority}</Badge>
                       </div>
                     </div>
                     <div className="flex flex-wrap gap-2">
                       <Button variant="outline" size="sm">
                         <Eye className="h-4 w-4 mr-2" />
-                        विस्तार
+                        विस्तार से देखें
                       </Button>
                       <Button variant="outline" size="sm">
                         <MessageCircle className="h-4 w-4 mr-2" />
-                        चर्चा
+                        चर्चा करें
                       </Button>
                       <Button variant="outline" size="sm">
                         <Share2 className="h-4 w-4 mr-2" />
-                        शेयर
+                        शेयर करें
+                      </Button>
+                      <Button variant="outline" size="sm">
+                        <Bookmark className="h-4 w-4 mr-2" />
+                        सेव करें
                       </Button>
                     </div>
                   </CardContent>
@@ -507,7 +512,10 @@ export default function Home() {
           <TabsContent value="local" className="space-y-4">
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-lg font-semibold">स्थानीय शिकायतें</h3>
-              <Button>नई शिकायत दर्ज करें</Button>
+              <Button size="sm">
+                <MessageCircle className="h-4 w-4 mr-2" />
+                नई शिकायत दर्ज करें
+              </Button>
             </div>
             <div className="grid gap-4">
               {localReports.map((report) => (
@@ -516,17 +524,12 @@ export default function Home() {
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
                         <div className="flex items-center space-x-2 mb-2">
-                          <Badge variant="outline" className={
-                            report.status === 'verified' ? 'bg-green-100 text-green-800' :
-                            report.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                            'bg-gray-100 text-gray-800'
-                          }>
-                            {report.status === 'verified' ? 'सत्यापित' :
-                             report.status === 'pending' ? 'लंबित' : 'अन्य'}
+                          <Badge variant="outline" className={getStatusColor(report.status)}>
+                            {report.status === 'pending' ? 'लंबित' : 
+                             report.status === 'verified' ? 'सत्यापित' : 'अन्य'}
                           </Badge>
                           <Badge variant="outline">
-                            <MapPin className="h-3 w-3 mr-1" />
-                            {report.city}, {report.state}
+                            {report.category}
                           </Badge>
                         </div>
                         <CardTitle className="text-lg mb-2">{report.title}</CardTitle>
@@ -534,8 +537,8 @@ export default function Home() {
                       </div>
                       <div className="flex flex-col items-end space-y-2">
                         <div className="flex items-center space-x-1">
+                          <ThumbsUp className="h-4 w-4 text-green-600" />
                           <span className="text-sm font-bold">{report.upvotes}</span>
-                          <span className="text-xs text-gray-500">वोट</span>
                         </div>
                         <span className="text-sm text-gray-500">
                           {formatDate(report.createdAt)}
@@ -544,15 +547,40 @@ export default function Home() {
                     </div>
                   </CardHeader>
                   <CardContent>
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-2 text-sm text-gray-500">
-                        <MapPin className="h-4 w-4" />
-                        <span>{report.area}, {report.city}</span>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                      <div>
+                        <span className="text-sm text-gray-500">राज्य</span>
+                        <p className="font-bold">{report.state}</p>
                       </div>
-                      <div className="flex space-x-2">
-                        <Button variant="outline" size="sm">विस्तार</Button>
-                        <Button variant="outline" size="sm">समर्थन करें</Button>
+                      <div>
+                        <span className="text-sm text-gray-500">शहर</span>
+                        <p className="font-bold">{report.city}</p>
                       </div>
+                      <div>
+                        <span className="text-sm text-gray-500">क्षेत्र</span>
+                        <p className="font-bold">{report.area}</p>
+                      </div>
+                      <div>
+                        <span className="text-sm text-gray-500">समर्थन</span>
+                        <div className="flex items-center space-x-1">
+                          <ThumbsUp className="h-4 w-4 text-green-600" />
+                          <span className="font-bold">{report.upvotes}</span>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      <Button variant="outline" size="sm">
+                        <ThumbsUp className="h-4 w-4 mr-2" />
+                        समर्थन करें
+                      </Button>
+                      <Button variant="outline" size="sm">
+                        <MessageCircle className="h-4 w-4 mr-2" />
+                        चर्चा करें
+                      </Button>
+                      <Button variant="outline" size="sm">
+                        <Share2 className="h-4 w-4 mr-2" />
+                        शेयर करें
+                      </Button>
                     </div>
                   </CardContent>
                 </Card>
@@ -563,35 +591,23 @@ export default function Home() {
           {/* Political Promises */}
           <TabsContent value="promises" className="space-y-4">
             <div className="flex justify-between items-center mb-4">
-              <div className="flex items-center space-x-4">
-                <h3 className="text-lg font-semibold">राजनीतिक वादे</h3>
-                <div className="text-sm text-gray-600 italic">"वादे याद हैं हमें!"</div>
-              </div>
+              <h3 className="text-lg font-semibold">राजनीतिक वादे</h3>
               <div className="flex items-center space-x-2">
                 <Select value={selectedParty} onValueChange={setSelectedParty}>
-                  <SelectTrigger className="w-32">
-                    <SelectValue placeholder="पार्टी" />
+                  <SelectTrigger className="w-40">
+                    <SelectValue placeholder="पार्टी चुनें" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">सभी पार्टियां</SelectItem>
-                    <SelectItem value="bjp">BJP</SelectItem>
-                    <SelectItem value="inc">Congress</SelectItem>
-                    <SelectItem value="aap">AAP</SelectItem>
+                    <SelectItem value="bjp">भाजपा</SelectItem>
+                    <SelectItem value="inc">कांग्रेस</SelectItem>
+                    <SelectItem value="aap">आप</SelectItem>
                   </SelectContent>
                 </Select>
-                <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-                  <SelectTrigger className="w-32">
-                    <SelectValue placeholder="श्रेणी" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">सभी श्रेणियां</SelectItem>
-                    <SelectItem value="economy">अर्थव्यवस्था</SelectItem>
-                    <SelectItem value="education">शिक्षा</SelectItem>
-                    <SelectItem value="farmers">किसान</SelectItem>
-                    <SelectItem value="women">महिलाएं</SelectItem>
-                  </SelectContent>
-                </Select>
-                <Button>नया वादा रिपोर्ट करें</Button>
+                <Button size="sm">
+                  <FileText className="h-4 w-4 mr-2" />
+                  वादा रिपोर्ट करें
+                </Button>
               </div>
             </div>
             <div className="grid gap-4">
@@ -601,7 +617,6 @@ export default function Home() {
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
                         <div className="flex items-center space-x-2 mb-2">
-                          <Building className="h-4 w-4" />
                           <Badge variant="outline" className={getStatusColor(promise.status)}>
                             {getStatusText(promise.status)}
                           </Badge>
@@ -609,28 +624,19 @@ export default function Home() {
                             {promise.party.shortName}
                           </Badge>
                           <Badge variant="outline">
-                            <Calendar className="h-3 w-3 mr-1" />
-                            {promise.electionYear}
+                            {promise.category}
                           </Badge>
                         </div>
                         <CardTitle className="text-lg mb-2">{promise.title}</CardTitle>
-                        <p className="text-gray-600 text-sm mb-2">{promise.description}</p>
-                        {promise.leader && (
-                          <div className="flex items-center space-x-2 text-sm text-gray-500">
-                            <User className="h-3 w-3" />
-                            <span>{promise.leader.name}</span>
-                            {promise.leader.position && <span>• {promise.leader.position}</span>}
-                          </div>
-                        )}
+                        <p className="text-gray-600 text-sm">{promise.description}</p>
                       </div>
                       <div className="flex flex-col items-end space-y-2">
                         <span className="text-sm text-gray-500">
                           {formatDate(promise.promiseDate)}
                         </span>
-                        <div className="flex items-center space-x-1 text-xs text-gray-500">
-                          <Vote className="h-3 w-3" />
-                          <span>{promise._count.votes}</span>
-                        </div>
+                        <Badge variant="outline">
+                          {promise.electionYear}
+                        </Badge>
                       </div>
                     </div>
                   </CardHeader>
@@ -641,34 +647,40 @@ export default function Home() {
                         <p className="font-bold">{promise.party.name}</p>
                       </div>
                       <div>
-                        <span className="text-sm text-gray-500">श्रेणी</span>
-                        <p className="font-bold">{promise.category}</p>
+                        <span className="text-sm text-gray-500">नेता</span>
+                        <p className="font-bold">{promise.leader?.name || 'N/A'}</p>
                       </div>
                       <div>
                         <span className="text-sm text-gray-500">वोट</span>
-                        <p className="font-bold">{formatNumber(promise._count.votes)}</p>
+                        <div className="flex items-center space-x-1">
+                          <Vote className="h-4 w-4 text-blue-600" />
+                          <span className="font-bold">{promise._count.votes}</span>
+                        </div>
                       </div>
                       <div>
-                        <span className="text-sm text-gray-500">कमेंट्स</span>
-                        <p className="font-bold">{promise._count.comments}</p>
+                        <span className="text-sm text-gray-500">चर्चा</span>
+                        <div className="flex items-center space-x-1">
+                          <MessageCircle className="h-4 w-4 text-green-600" />
+                          <span className="font-bold">{promise._count.comments}</span>
+                        </div>
                       </div>
                     </div>
                     <div className="flex flex-wrap gap-2">
                       <Button variant="outline" size="sm">
-                        <Eye className="h-4 w-4 mr-2" />
-                        विस्तार
-                      </Button>
-                      <Button variant="outline" size="sm">
                         <Vote className="h-4 w-4 mr-2" />
-                        वोट करें
+                        वोट दें
                       </Button>
                       <Button variant="outline" size="sm">
                         <MessageCircle className="h-4 w-4 mr-2" />
-                        कमेंट
+                        चर्चा करें
                       </Button>
                       <Button variant="outline" size="sm">
-                        <Bell className="h-4 w-4 mr-2" />
-                        याद दिलाएं
+                        <Share2 className="h-4 w-4 mr-2" />
+                        शेयर करें
+                      </Button>
+                      <Button variant="outline" size="sm">
+                        <Bookmark className="h-4 w-4 mr-2" />
+                        सेव करें
                       </Button>
                     </div>
                   </CardContent>
@@ -679,266 +691,37 @@ export default function Home() {
 
           {/* Timeline */}
           <TabsContent value="timeline" className="space-y-4">
-            <Alert>
-              <Clock className="h-4 w-4" />
-              <AlertDescription>
-                टाइमलाइन दिखाती है कि मुद्दे कैसे विकसित हुए हैं और उन पर क्या कार्रवाई हुई है।
-              </AlertDescription>
-            </Alert>
-            <div className="space-y-4">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg">मुद्दा इतिहास</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    <div className="flex items-start space-x-4">
-                      <div className="w-3 h-3 bg-blue-500 rounded-full mt-1" />
-                      <div className="flex-1">
-                        <div className="flex items-center justify-between">
-                          <p className="font-medium">मुद्दा दर्ज किया गया</p>
-                          <span className="text-sm text-gray-500">15 जनवरी 2024</span>
-                        </div>
-                        <p className="text-sm text-gray-600">सरकारी अस्पतालों में डॉक्टरों की कमी की शिकायत दर्ज की गई</p>
-                      </div>
-                    </div>
-                    <div className="flex items-start space-x-4">
-                      <div className="w-3 h-3 bg-yellow-500 rounded-full mt-1" />
-                      <div className="flex-1">
-                        <div className="flex items-center justify-between">
-                          <p className="font-medium">जांच शुरू</p>
-                          <span className="text-sm text-gray-500">18 जनवरी 2024</span>
-                        </div>
-                        <p className="text-sm text-gray-600">स्वास्थ्य विभाग ने जांच शुरू की</p>
-                      </div>
-                    </div>
-                    <div className="flex items-start space-x-4">
-                      <div className="w-3 h-3 bg-orange-500 rounded-full mt-1" />
-                      <div className="flex-1">
-                        <div className="flex items-center justify-between">
-                          <p className="font-medium">चर्चा में</p>
-                          <span className="text-sm text-gray-500">20 जनवरी 2024</span>
-                        </div>
-                        <p className="text-sm text-gray-600">विधानसभा में मुद्दा उठाया गया</p>
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+            <div className="text-center py-12">
+              <h3 className="text-lg font-semibold mb-2">टाइमलाइन</h3>
+              <p className="text-gray-600">यह फीचर जल्द आ रहा है</p>
             </div>
           </TabsContent>
 
           {/* Accountability */}
           <TabsContent value="accountability" className="space-y-4">
-            <Alert>
-              <CheckCircle className="h-4 w-4" />
-              <AlertDescription>
-                वादे और वास्तविक कार्रवाई का ट्रैकिंग - जानें कि क्या कहा गया और क्या किया गया।
-              </AlertDescription>
-            </Alert>
-            <div className="grid gap-4">
-              <Card>
-                <CardHeader>
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="text-lg">वादा vs वास्तविकता</CardTitle>
-                    <Badge className="bg-yellow-100 text-yellow-800">लंबित</Badge>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    <div>
-                      <h4 className="font-medium text-green-700">वादा</h4>
-                      <p className="text-sm text-gray-600">"3 महीने के अंदर सभी सरकारी अस्पतालों में डॉक्टरों की नियुक्ति की जाएगी"</p>
-                      <p className="text-xs text-gray-500">- स्वास्थ्य मंत्री, 1 जनवरी 2024</p>
-                    </div>
-                    <Separator />
-                    <div>
-                      <h4 className="font-medium text-red-700">वास्तविकता</h4>
-                      <p className="text-sm text-gray-600">अभी तक कोई नियुक्ति नहीं हुई, भर्ती प्रक्रिया शुरू नहीं हुई</p>
-                      <p className="text-xs text-gray-500">- आखिरी अपडेट: 20 जनवरी 2024</p>
-                    </div>
-                    <div className="flex space-x-2">
-                      <Button variant="outline" size="sm">विस्तार जानें</Button>
-                      <Button variant="outline" size="sm">रिमाइंडर सेट करें</Button>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+            <div className="text-center py-12">
+              <h3 className="text-lg font-semibold mb-2">जवाबदेही</h3>
+              <p className="text-gray-600">यह फीचर जल्द आ रहा है</p>
             </div>
           </TabsContent>
 
           {/* Dashboard */}
           <TabsContent value="dashboard" className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-              <Card>
-                <CardContent className="p-6">
-                  <div className="flex items-center space-x-2">
-                    <FileText className="h-8 w-8 text-blue-600" />
-                    <div>
-                      <p className="text-sm font-medium text-gray-600">कुल मुद्दे</p>
-                      <p className="text-2xl font-bold">156</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardContent className="p-6">
-                  <div className="flex items-center space-x-2">
-                    <CheckCircle className="h-8 w-8 text-green-600" />
-                    <div>
-                      <p className="text-sm font-medium text-gray-600">हल हुए</p>
-                      <p className="text-2xl font-bold">42</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardContent className="p-6">
-                  <div className="flex items-center space-x-2">
-                    <Award className="h-8 w-8 text-orange-600" />
-                    <div>
-                      <p className="text-sm font-medium text-gray-600">कुल वादे</p>
-                      <p className="text-2xl font-bold">89</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardContent className="p-6">
-                  <div className="flex items-center space-x-2">
-                    <BarChart3 className="h-8 w-8 text-purple-600" />
-                    <div>
-                      <p className="text-sm font-medium text-gray-600">पूरे हुए</p>
-                      <p className="text-2xl font-bold">23</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-            
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg">पार्टी वार प्रदर्शन</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-2">
-                        <div className="w-3 h-3 bg-orange-500 rounded-full" />
-                        <span>BJP</span>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <div className="w-24 bg-gray-200 rounded-full h-2">
-                          <div className="bg-orange-500 h-2 rounded-full" style={{ width: '65%' }}></div>
-                        </div>
-                        <span className="text-sm font-medium">65%</span>
-                      </div>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-2">
-                        <div className="w-3 h-3 bg-blue-500 rounded-full" />
-                        <span>Congress</span>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <div className="w-24 bg-gray-200 rounded-full h-2">
-                          <div className="bg-blue-500 h-2 rounded-full" style={{ width: '45%' }}></div>
-                        </div>
-                        <span className="text-sm font-medium">45%</span>
-                      </div>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-2">
-                        <div className="w-3 h-3 bg-green-500 rounded-full" />
-                        <span>AAP</span>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <div className="w-24 bg-gray-200 rounded-full h-2">
-                          <div className="bg-green-500 h-2 rounded-full" style={{ width: '78%' }}></div>
-                        </div>
-                        <span className="text-sm font-medium">78%</span>
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-              
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg">श्रेणी वार वितरण</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                      <span>अर्थव्यवस्था</span>
-                      <span className="text-sm font-medium">24 वादे</span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span>शिक्षा</span>
-                      <span className="text-sm font-medium">18 वादे</span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span>किसान</span>
-                      <span className="text-sm font-medium">15 वादे</span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span>महिलाएं</span>
-                      <span className="text-sm font-medium">12 वादे</span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span>बुनियादी ढांचा</span>
-                      <span className="text-sm font-medium">20 वादे</span>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+            <div className="text-center py-12">
+              <h3 className="text-lg font-semibold mb-2">डैशबोर्ड</h3>
+              <p className="text-gray-600">यह फीचर जल्द आ रहा है</p>
             </div>
           </TabsContent>
         </Tabs>
       </main>
-
-      {/* Footer */}
-      <footer className="bg-white border-t mt-12">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-            <div>
-              <h3 className="font-semibold mb-4">असल मुद्दे</h3>
-              <p className="text-sm text-gray-600">
-                नागरिकों को वास्तविक सार्वजनिक मुद्दों की जानकारी देना और उन्हें याद दिलाना।
-              </p>
-            </div>
-            <div>
-              <h4 className="font-medium mb-4">विशेषताएं</h4>
-              <ul className="space-y-2 text-sm text-gray-600">
-                <li>दैनिक मुद्दे</li>
-                <li>स्थानीय शिकायतें</li>
-                <li>राजनीतिक वादे</li>
-                <li>जवाबदेही ट्रैकर</li>
-                <li>रिमाइंडर सिस्टम</li>
-              </ul>
-            </div>
-            <div>
-              <h4 className="font-medium mb-4">हमारे बारे में</h4>
-              <ul className="space-y-2 text-sm text-gray-600">
-                <li>हमारा मिशन</li>
-                <li>टीम</li>
-                <li>संपर्क करें</li>
-                <li>गोपनीयता नीति</li>
-              </ul>
-            </div>
-            <div>
-              <h4 className="font-medium mb-4">संपर्क</h4>
-              <p className="text-sm text-gray-600">
-                हमसे संपर्क करें: info@asalmudde.in<br />
-                फोन: 1800-123-4567
-              </p>
-            </div>
-          </div>
-          <div className="border-t mt-8 pt-8 text-center text-sm text-gray-600">
-            © 2024 असल मुद्दे. सर्वाधिकार सुरक्षित।
-          </div>
-        </div>
-      </footer>
     </div>
+  )
+}
+
+export default function Home() {
+  return (
+    <NextIntlClientProvider messages={hiMessages} locale="hi">
+      <HomeContent />
+    </NextIntlClientProvider>
   )
 }

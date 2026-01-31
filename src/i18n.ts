@@ -1,6 +1,8 @@
-import {routing} from './src/i18n/navigation';
+import {routing} from './i18n/navigation';
 
-export default {
+const config = {
   locales: routing.locales,
   defaultLocale: routing.defaultLocale
 };
+
+export default config;

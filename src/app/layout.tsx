@@ -4,8 +4,6 @@ import "./globals.css";
 import "./pwa.css";
 import { Toaster } from "@/components/ui/toaster";
 import { NextIntlClientProvider } from 'next-intl';
-import { getMessages } from 'next-intl/server';
-import {routing} from '@/i18n/navigation';
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -54,23 +52,20 @@ export const viewport = {
   userScalable: false,
 };
 
-export default async function RootLayout({
+export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const locale = routing.defaultLocale;
-  const messages = await getMessages();
-
+  // For the root layout, we'll use a simple approach without internationalization
+  // The actual internationalization will be handled in the page components
   return (
-    <html lang={locale} suppressHydrationWarning>
+    <html lang="hi" suppressHydrationWarning>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased bg-background text-foreground`}
       >
-        <NextIntlClientProvider messages={messages}>
-          {children}
-          <Toaster />
-        </NextIntlClientProvider>
+        {children}
+        <Toaster />
       </body>
     </html>
   );
