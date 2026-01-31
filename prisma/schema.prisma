@@ -14,19 +14,365 @@ datasource db {
 }
 
 model User {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  name      String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id                String    @id @default(cuid())
+  email             String    @unique
+  name              String?
+  phone             String?
+  state             String?
+  city              String?
+  preferredLanguage String    @default("hi")
+  issuePreferences  String    @default("")
+  noiseFilter       Boolean   @default(true)
+  reminderFrequency String    @default("daily") // daily, weekly, monthly
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  
+  // Relations
+  reports           LocalReport[]
+  discussions       Discussion[]
+  reminders         Reminder[]
+  promiseVotes      PromiseVote[]
+  userNotes         UserNote[]
+  promiseComments   PromiseComment[]
 }
 
-model Post {
+model Issue {
+  id                String    @id @default(cuid())
+  title             String
+  summary           String
+  description       String
+  category          String    // economy, education, health, infrastructure, environment
+  subcategory       String?
+  impactScore       Int       @default(0) // 0-100
+  affectedPeople    Int?
+  financialImpact   BigInt?
+  longTermImpact    Boolean   @default(false)
+  localVsNational   String    @default("national") // local, national
+  state             String?
+  city              String?
+  area              String?
+  status            String    @default("active") // active, resolved, ignored, under_discussion
+  priority          String    @default("medium") // low, medium, high, critical
+  sourceUrl         String?
+  sourceTitle       String?
+  isVerified        Boolean   @default(false)
+  tags              String    @default("")
+  firstReportedAt   DateTime  @default(now())
+  lastUpdated       DateTime  @updatedAt
+  expectedResolution DateTime?
+  actualResolution   DateTime?
+  
+  // Relations
+  timeline          IssueTimeline[]
+  reports           LocalReport[]
+  discussions       Discussion[]
+  reminders         Reminder[]
+  accountability    Accountability[]
+  factChecks        FactCheck[]
+}
+
+model IssueTimeline {
+  id          String   @id @default(cuid())
+  issueId     String
+  eventType   String   // reported, updated, resolved, ignored
+  description String
+  date        DateTime @default(now())
+  source      String?
+  
+  issue       Issue    @relation(fields: [issueId], references: [id], onDelete: Cascade)
+}
+
+model LocalReport {
+  id          String    @id @default(cuid())
+  issueId     String?
+  userId      String
+  title       String
+  description String
+  category    String
+  state       String?
+  city        String?
+  area        String?
+  latitude    Float?
+  longitude   Float?
+  imageUrl    String?
+  status      String    @default("pending") // pending, verified, rejected, resolved
+  adminNotes  String?
+  isAnonymous Boolean   @default(false)
+  upvotes     Int       @default(0)
+  downvotes   Int       @default(0)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  
+  user        User      @relation(fields: [userId], references: [id])
+  issue       Issue?    @relation(fields: [issueId], references: [id])
+}
+
+model Discussion {
+  id           String   @id @default(cuid())
+  issueId      String
+  userId       String
+  content      String
+  isExpert     Boolean  @default(false)
+  expertField  String?
+  isModerated  Boolean  @default(false)
+  moderatedBy  String?
+  moderatedAt  DateTime?
+  upvotes      Int      @default(0)
+  downvotes    Int      @default(0)
+  isDeleted    Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  
+  issue        Issue    @relation(fields: [issueId], references: [id], onDelete: Cascade)
+  user         User     @relation(fields: [userId], references: [id])
+}
+
+model Reminder {
+  id             String   @id @default(cuid())
+  userId         String
+  issueId        String?
+  type           String   // daily, weekly, monthly, forgotten
+  message        String
+  scheduledFor   DateTime
+  isSent         Boolean  @default(false)
+  sentAt         DateTime?
+  isActive       Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  
+  user           User     @relation(fields: [userId], references: [id])
+  issue          Issue?   @relation(fields: [issueId], references: [id])
+}
+
+model Accountability {
+  id              String   @id @default(cuid())
+  issueId         String
+  promiseType     String   // government, official, department
+  promisor        String
+  promise         String
+  promisedDate    DateTime
+  expectedAction  String
+  actualAction    String?
+  status          String   @default("pending") // pending, in_progress, completed, broken
+  lastUpdated     DateTime @updatedAt
+  completedAt     DateTime?
+  
+  issue           Issue    @relation(fields: [issueId], references: [id], onDelete: Cascade)
+}
+
+model FactCheck {
+  id            String   @id @default(cuid())
+  issueId       String
+  claim         String
+  reality       String
+  isMisleading  Boolean  @default(false)
+  sources       String   @default("")
+  verifiedBy    String?
+  verifiedAt    DateTime?
+  createdAt     DateTime @default(now())
+  
+  issue         Issue    @relation(fields: [issueId], references: [id], onDelete: Cascade)
+}
+
+model Distraction {
+  id            String   @id @default(cuid())
+  title         String
+  description   String
+  category      String   // viral, sensational, low_impact
+  impactLevel   String   // low, medium, high
+  reason        String   // why this is considered a distraction
+  detectedAt    DateTime @default(now())
+  isActive      Boolean  @default(true)
+}
+
+// Political Promise Database Models
+model PoliticalParty {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  shortName   String   @unique // BJP, Congress, AAP, etc.
+  description String?
+  logo        String?
+  foundedYear Int?
+  ideology    String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  // Relations
+  leaders      PoliticalLeader[]
+  promises     PoliticalPromise[]
+  manifestos   PartyManifesto[]
+}
+
+model PoliticalLeader {
+  id          String   @id @default(cuid())
+  name        String
+  partyId     String
+  position    String?   // PM, CM, Minister, MP, MLA, etc.
+  state       String?
+  constituency String?
+  photo       String?
+  bio         String?
+  isActive    Boolean   @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  // Relations
+  party        PoliticalParty    @relation(fields: [partyId], references: [id])
+  promises     PoliticalPromise[]
+}
+
+model PoliticalPromise {
+  id                String    @id @default(cuid())
+  title             String
+  description       String
+  category          String    // women, farmers, youth, economy, jobs, infrastructure, etc.
+  subcategory       String?
+  partyId           String
+  leaderId          String?
+  electionYear      Int
+  state             String?
+  constituency      String?
+  promiseDate       DateTime
+  promiseLocation   String?
+  sourceUrl         String?
+  sourceType        String    // speech, interview, manifesto, rally, etc.
+  evidenceUrl       String?   // video, audio, document link
+  evidenceType      String?   // video, audio, image, document
+  status            String    @default("pending") // fulfilled, partially_fulfilled, pending, broken, not_applicable
+  verificationLevel String   @default("unverified") // unverified, verified, disputed
+  adminNotes        String?
+  isVerified        Boolean   @default(false)
+  verifiedBy        String?
+  verifiedAt        DateTime?
+  fulfilledDate     DateTime?
+  fulfillmentEvidence String?
+  tags              String    @default("")
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  
+  // Relations
+  party             PoliticalParty   @relation(fields: [partyId], references: [id])
+  leader            PoliticalLeader? @relation(fields: [leaderId], references: [id])
+  votes             PromiseVote[]
+  reminders         PromiseReminder[]
+  factChecks        PromiseFactCheck[]
+  comments          PromiseComment[]
+}
+
+model PromiseVote {
+  id          String   @id @default(cuid())
+  promiseId   String
+  userId      String
+  vote        String    // fulfilled, partially_fulfilled, broken, not_applicable
+  confidence  Int       @default(3) // 1-5 confidence level
+  comment     String?
+  isAnonymous Boolean   @default(false)
+  createdAt   DateTime @default(now())
+  
+  promise     PoliticalPromise @relation(fields: [promiseId], references: [id], onDelete: Cascade)
+  user        User             @relation(fields: [userId], references: [id])
+  
+  @@unique([promiseId, userId])
+}
+
+model PromiseReminder {
+  id          String   @id @default(cuid())
+  promiseId   String
+  userId      String
+  type        String    // monthly, quarterly, custom
+  frequency   String    // 30d, 90d, custom
+  isActive    Boolean   @default(true)
+  lastSent    DateTime?
+  nextDue     DateTime
+  createdAt   DateTime @default(now())
+  
+  promise     PoliticalPromise @relation(fields: [promiseId], references: [id], onDelete: Cascade)
+}
+
+model PromiseFactCheck {
+  id          String   @id @default(cuid())
+  promiseId   String
+  claim       String
+  reality     String
+  rating      String    // true, mostly_true, half_true, mostly_false, false
+  sources     String    @default("")
+  verifiedBy  String?
+  verifiedAt  DateTime?
+  createdAt   DateTime @default(now())
+  
+  promise     PoliticalPromise @relation(fields: [promiseId], references: [id], onDelete: Cascade)
+}
+
+model PromiseComment {
+  id          String   @id @default(cuid())
+  promiseId   String
+  userId      String
+  content     String
+  isAnonymous Boolean   @default(false)
+  isModerated Boolean   @default(false)
+  moderatedBy String?
+  moderatedAt DateTime?
+  upvotes     Int       @default(0)
+  downvotes   Int       @default(0)
+  isDeleted   Boolean   @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  promise     PoliticalPromise @relation(fields: [promiseId], references: [id], onDelete: Cascade)
+  user        User             @relation(fields: [userId], references: [id])
+}
+
+model PartyManifesto {
+  id          String   @id @default(cuid())
+  partyId     String
+  electionYear Int
+  state       String?
+  title       String
+  description String?
+  pdfUrl      String?
+  summary     String?
+  keyPromises String    @default("") // JSON array of key promises
+  isActive    Boolean   @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  party       PoliticalParty @relation(fields: [partyId], references: [id])
+}
+
+model Poll {
+  id          String   @id @default(cuid())
+  question    String
+  promiseId   String?
+  options     String    // JSON array of options
+  isActive    Boolean   @default(true)
+  startDate   DateTime @default(now())
+  endDate     DateTime?
+  totalVotes  Int       @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model PollVote {
   id        String   @id @default(cuid())
-  title     String
-  content   String?
-  published Boolean  @default(false)
-  authorId  String
+  pollId    String
+  userId    String?
+  option    String
+  ipAddress String?
+  userAgent String?
   createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  
+  @@unique([pollId, userId, ipAddress])
+}
+
+model UserNote {
+  id          String   @id @default(cuid())
+  userId      String
+  title       String
+  content     String
+  category    String    // voting_history, representative_notes, personal_notes
+  tags        String    @default("")
+  isPublic    Boolean   @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  user        User     @relation(fields: [userId], references: [id])
 }

@@ -1,31 +1,944 @@
 'use client'
 
+import { useState, useEffect } from 'react'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Alert, AlertDescription } from '@/components/ui/alert'
+import { Progress } from '@/components/ui/progress'
+import { Separator } from '@/components/ui/separator'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Input } from '@/components/ui/input'
+import { 
+  TrendingUp, 
+  Users, 
+  MapPin, 
+  Clock, 
+  AlertTriangle, 
+  CheckCircle, 
+  Bell,
+  Filter,
+  Search,
+  Eye,
+  MessageCircle,
+  Share2,
+  Bookmark,
+  RefreshCw,
+  ThumbsUp,
+  ThumbsDown,
+  Calendar,
+  User,
+  Building,
+  Award,
+  FileText,
+  Vote,
+  BarChart3
+} from 'lucide-react'
+import { LanguageSelector } from '@/components/language-selector'
+import { useTranslations } from 'next-intl'
+
+interface Issue {
+  id: string
+  title: string
+  summary: string
+  category: string
+  impactScore: number
+  affectedPeople?: number
+  status: string
+  priority: string
+  localVsNational: string
+  state?: string
+  city?: string
+  tags: string
+  firstReportedAt: string
+  lastUpdated: string
+}
+
+interface LocalReport {
+  id: string
+  title: string
+  description: string
+  category: string
+  state?: string
+  city?: string
+  area?: string
+  status: string
+  upvotes: number
+  createdAt: string
+}
+
+interface PoliticalPromise {
+  id: string
+  title: string
+  description: string
+  category: string
+  status: string
+  electionYear: number
+  promiseDate: string
+  party: {
+    id: string
+    name: string
+    shortName: string
+    logo?: string
+  }
+  leader?: {
+    id: string
+    name: string
+    position?: string
+    photo?: string
+  }
+  _count: {
+    votes: number
+    comments: number
+    factChecks: number
+  }
+}
+
+const mockIssues: Issue[] = [
+  {
+    id: '1',
+    title: 'सरकारी अस्पतालों में डॉक्टरों की कमी',
+    summary: 'राज्य के सरकारी अस्पतालों में 40% पद खाली, मरीजों को इलाज के लिए इंतजार',
+    category: 'health',
+    impactScore: 85,
+    affectedPeople: 50000,
+    status: 'active',
+    priority: 'high',
+    localVsNational: 'national',
+    state: 'उत्तर प्रदेश',
+    tags: 'healthcare,doctors,hospital',
+    firstReportedAt: '2024-01-15',
+    lastUpdated: '2024-01-20'
+  },
+  {
+    id: '2',
+    title: 'गांवों में सड़कें टूटी हुईं, आवागमन प्रभावित',
+    summary: 'मानसून के बाद से 200+ गांवों की सड़कें खराब, स्कूली बच्चों और किसानों को परेशानी',
+    category: 'infrastructure',
+    impactScore: 72,
+    affectedPeople: 25000,
+    status: 'active',
+    priority: 'medium',
+    localVsNational: 'local',
+    state: 'बिहार',
+    city: 'पटना',
+    tags: 'roads,infrastructure,village',
+    firstReportedAt: '2024-01-10',
+    lastUpdated: '2024-01-18'
+  },
+  {
+    id: '3',
+    title: 'सरकारी स्कूलों में शिक्षकों की कमी से बच्चों की पढ़ाई प्रभावित',
+    summary: 'प्राथमिक स्कूलों में 30% शिक्षक पद खाली, छात्र-शिक्षक अनुपात बिगड़ा',
+    category: 'education',
+    impactScore: 78,
+    affectedPeople: 75000,
+    status: 'under_discussion',
+    priority: 'high',
+    localVsNational: 'national',
+    tags: 'education,teachers,school',
+    firstReportedAt: '2024-01-05',
+    lastUpdated: '2024-01-19'
+  }
+]
+
+const mockLocalReports: LocalReport[] = [
+  {
+    id: '1',
+    title: 'हमारे मोहल्ले में पानी की समस्या',
+    description: 'पिछले 15 दिनों से पानी नहीं आ रहा, टैंकर से पानी मिल रहा है',
+    category: 'water',
+    state: 'दिल्ली',
+    city: 'नई दिल्ली',
+    area: 'लक्ष्मी नगर',
+    status: 'pending',
+    upvotes: 45,
+    createdAt: '2024-01-20'
+  },
+  {
+    id: '2',
+    title: 'स्ट्रीट लाइट नहीं जल रहीं',
+    description: 'मुख्य सड़क पर स्ट्रीट लाइट खराब, रात में अंधेरा',
+    category: 'electricity',
+    state: 'महाराष्ट्र',
+    city: 'मुंबई',
+    area: 'बांद्रा',
+    status: 'verified',
+    upvotes: 23,
+    createdAt: '2024-01-19'
+  }
+]
+
+const mockPromises: PoliticalPromise[] = [
+  {
+    id: '1',
+    title: 'हर गरीब परिवार को 5000 रुपये मासिक भत्ता',
+    description: 'सभी गरीब परिवारों को हर महीने 5000 रुपये का भत्ता दिया जाएगा ताकि उनका जीवन स्तर बेहतर हो सके',
+    category: 'economy',
+    status: 'pending',
+    electionYear: 2024,
+    promiseDate: '2024-01-15',
+    party: {
+      id: '1',
+      name: 'भारतीय जनता पार्टी',
+      shortName: 'BJP'
+    },
+    leader: {
+      id: '1',
+      name: 'नरेंद्र मोदी',
+      position: 'प्रधानमंत्री'
+    },
+    _count: {
+      votes: 1250,
+      comments: 89,
+      factChecks: 3
+    }
+  },
+  {
+    id: '2',
+    title: 'सभी छात्रों को लैपटॉप और इंटरनेट',
+    description: 'शिक्षा में तकनीकी को बढ़ावा देने के लिए सभी सरकारी स्कूलों के छात्रों को मुफ्त लैपटॉप और इंटरनेट कनेक्शन दिया जाएगा',
+    category: 'education',
+    status: 'partially_fulfilled',
+    electionYear: 2024,
+    promiseDate: '2024-01-10',
+    party: {
+      id: '2',
+      name: 'भारतीय राष्ट्रीय कांग्रेस',
+      shortName: 'INC'
+    },
+    _count: {
+      votes: 890,
+      comments: 56,
+      factChecks: 2
+    }
+  },
+  {
+    id: '3',
+    title: 'किसानों का कर्ज माफ',
+    description: 'देश के सभी किसानों का 2 लाख तक का कृषि ऋण माफ किया जाएगा',
+    category: 'farmers',
+    status: 'broken',
+    electionYear: 2024,
+    promiseDate: '2024-01-08',
+    party: {
+      id: '3',
+      name: 'आम आदमी पार्टी',
+      shortName: 'AAP'
+    },
+    leader: {
+      id: '3',
+      name: 'अरविंद केजरीवाल',
+      position: 'दिल्ली के मुख्यमंत्री'
+    },
+    _count: {
+      votes: 2100,
+      comments: 156,
+      factChecks: 8
+    }
+  }
+]
+
 export default function Home() {
+  const [selectedTab, setSelectedTab] = useState('daily')
+  const [issues, setIssues] = useState<Issue[]>(mockIssues)
+  const [localReports, setLocalReports] = useState<LocalReport[]>(mockLocalReports)
+  const [promises, setPromises] = useState<PoliticalPromise[]>(mockPromises)
+  const [loading, setLoading] = useState(false)
+  const [searchTerm, setSearchTerm] = useState('')
+  const [selectedParty, setSelectedParty] = useState('all')
+  const [selectedCategory, setSelectedCategory] = useState('all')
+  const t = useTranslations()
+
+  const getCategoryIcon = (category: string) => {
+    switch (category) {
+      case 'health': return <AlertTriangle className="h-4 w-4" />
+      case 'education': return <Users className="h-4 w-4" />
+      case 'infrastructure': return <MapPin className="h-4 w-4" />
+      case 'economy': return <TrendingUp className="h-4 w-4" />
+      case 'farmers': return <Award className="h-4 w-4" />
+      default: return <AlertTriangle className="h-4 w-4" />
+    }
+  }
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'active': return 'bg-red-100 text-red-800'
+      case 'resolved': return 'bg-green-100 text-green-800'
+      case 'under_discussion': return 'bg-yellow-100 text-yellow-800'
+      case 'ignored': return 'bg-gray-100 text-gray-800'
+      case 'fulfilled': return 'bg-green-100 text-green-800'
+      case 'partially_fulfilled': return 'bg-blue-100 text-blue-800'
+      case 'pending': return 'bg-yellow-100 text-yellow-800'
+      case 'broken': return 'bg-red-100 text-red-800'
+      default: return 'bg-gray-100 text-gray-800'
+    }
+  }
+
+  const getPriorityColor = (priority: string) => {
+    switch (priority) {
+      case 'critical': return 'bg-red-500'
+      case 'high': return 'bg-orange-500'
+      case 'medium': return 'bg-yellow-500'
+      case 'low': return 'bg-green-500'
+      default: return 'bg-gray-500'
+    }
+  }
+
+  const formatNumber = (num: number) => {
+    if (num >= 100000) return (num / 100000).toFixed(1) + ' लाख'
+    if (num >= 1000) return (num / 1000).toFixed(1) + ' हजार'
+    return num.toString()
+  }
+
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString)
+    return date.toLocaleDateString('hi-IN', { 
+      year: 'numeric', 
+      month: 'short', 
+      day: 'numeric' 
+    })
+  }
+
+  const getStatusText = (status: string) => {
+    switch (status) {
+      case 'fulfilled': return 'पूरा हुआ'
+      case 'partially_fulfilled': return 'आंशिक रूप से पूरा हुआ'
+      case 'pending': return 'लंबित'
+      case 'broken': return 'टूटा हुआ'
+      case 'not_applicable': return 'लागू नहीं'
+      default: return status
+    }
+  }
+
   return (
-    <div style={{
-      display: 'flex',
-      flexDirection: 'column',
-      alignItems: 'center',
-      justifyContent: 'center',
-      minHeight: '100vh',
-      gap: '2rem',
-      padding: '1rem'
-    }}>
-      <div style={{
-        position: 'relative',
-        width: '6rem',
-        height: '6rem'
-      }}>
-        <img
-          src="/logo.svg"
-          alt="Z.ai Logo"
-          style={{
-            width: '100%',
-            height: '100%',
-            objectFit: 'contain'
-          }}
-        />
-      </div>
+    <div className="min-h-screen bg-gray-50">
+      {/* Header */}
+      <header className="bg-white shadow-sm border-b">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center h-16">
+            <div className="flex items-center space-x-3">
+              <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
+                <span className="text-white font-bold">WV</span>
+              </div>
+              <h1 className="text-xl font-bold text-gray-900">WakeUp Voter</h1>
+            </div>
+            <div className="flex items-center space-x-4">
+              <div className="flex items-center space-x-2">
+                <Search className="h-4 w-4 text-gray-500" />
+                <Input
+                  placeholder="खोजें..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-48 h-8 text-sm"
+                />
+              </div>
+              <Button variant="outline" size="sm">
+                <Filter className="h-4 w-4 mr-2" />
+                फिल्टर
+              </Button>
+              <Button variant="outline" size="sm">
+                <Bell className="h-4 w-4 mr-2" />
+                रिमाइंडर
+              </Button>
+              <LanguageSelector />
+            </div>
+          </div>
+        </div>
+      </header>
+
+      {/* Main Content */}
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Daily Critical Issue */}
+        <section className="mb-8">
+          <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-xl p-6 text-white">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-2xl font-bold">Today's Critical Issue</h2>
+              <Badge className="bg-white/20 text-white border-white/30">
+                {formatDate(issues[0]?.firstReportedAt || '')}
+              </Badge>
+            </div>
+            <h3 className="text-xl font-semibold mb-3">{issues[0]?.title}</h3>
+            <p className="text-white/90 mb-4">{issues[0]?.summary}</p>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+              <div className="bg-white/10 rounded-lg p-3">
+                <div className="flex items-center space-x-2 mb-1">
+                  <Users className="h-4 w-4" />
+                  <span className="text-sm">प्रभावित लोग</span>
+                </div>
+                <p className="text-lg font-bold">{formatNumber(issues[0]?.affectedPeople || 0)}</p>
+              </div>
+              <div className="bg-white/10 rounded-lg p-3">
+                <div className="flex items-center space-x-2 mb-1">
+                  <TrendingUp className="h-4 w-4" />
+                  <span className="text-sm">इम्पैक्ट स्कोर</span>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Progress value={issues[0]?.impactScore || 0} className="flex-1 h-2" />
+                  <span className="text-sm font-bold">{issues[0]?.impactScore}</span>
+                </div>
+              </div>
+              <div className="bg-white/10 rounded-lg p-3">
+                <div className="flex items-center space-x-2 mb-1">
+                  <Clock className="h-4 w-4" />
+                  <span className="text-sm">स्थिति</span>
+                </div>
+                <Badge className="bg-white/20 text-white border-white/30">
+                  {issues[0]?.status === 'active' ? 'सक्रिय' : 'चर्चा में'}
+                </Badge>
+              </div>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <Button variant="secondary" size="sm">
+                <Eye className="h-4 w-4 mr-2" />
+                विस्तार से देखें
+              </Button>
+              <Button variant="secondary" size="sm">
+                <MessageCircle className="h-4 w-4 mr-2" />
+                चर्चा करें
+              </Button>
+              <Button variant="secondary" size="sm">
+                <Share2 className="h-4 w-4 mr-2" />
+                शेयर करें
+              </Button>
+              <Button variant="secondary" size="sm">
+                <Bookmark className="h-4 w-4 mr-2" />
+                सेव करें
+              </Button>
+            </div>
+          </div>
+        </section>
+
+        {/* Tabs */}
+        <Tabs value={selectedTab} onValueChange={setSelectedTab} className="space-y-6">
+          <TabsList className="grid w-full grid-cols-6">
+            <TabsTrigger value="daily">दैनिक मुद्दे</TabsTrigger>
+            <TabsTrigger value="local">स्थानीय मुद्दे</TabsTrigger>
+            <TabsTrigger value="promises">राजनीतिक वादे</TabsTrigger>
+            <TabsTrigger value="timeline">टाइमलाइन</TabsTrigger>
+            <TabsTrigger value="accountability">जवाबदेही</TabsTrigger>
+            <TabsTrigger value="dashboard">डैशबोर्ड</TabsTrigger>
+          </TabsList>
+
+          {/* Daily Issues */}
+          <TabsContent value="daily" className="space-y-4">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-semibold">सभी मुद्दे</h3>
+              <Button variant="outline" size="sm">
+                <RefreshCw className="h-4 w-4 mr-2" />
+                रिफ्रेश करें
+              </Button>
+            </div>
+            <div className="grid gap-4">
+              {issues.map((issue) => (
+                <Card key={issue.id} className="hover:shadow-md transition-shadow">
+                  <CardHeader className="pb-3">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center space-x-2 mb-2">
+                          {getCategoryIcon(issue.category)}
+                          <Badge variant="outline" className={getStatusColor(issue.status)}>
+                            {issue.status === 'active' ? 'सक्रिय' : 
+                             issue.status === 'resolved' ? 'हल हो गया' :
+                             issue.status === 'under_discussion' ? 'चर्चा में' : 'अनदेखा'}
+                          </Badge>
+                          <Badge variant="outline">
+                            {issue.localVsNational === 'local' ? 'स्थानीय' : 'राष्ट्रीय'}
+                          </Badge>
+                        </div>
+                        <CardTitle className="text-lg mb-2">{issue.title}</CardTitle>
+                        <p className="text-gray-600 text-sm">{issue.summary}</p>
+                      </div>
+                      <div className="flex flex-col items-end space-y-2">
+                        <div className={`w-3 h-3 rounded-full ${getPriorityColor(issue.priority)}`} />
+                        <span className="text-sm text-gray-500">
+                          {formatDate(issue.lastUpdated)}
+                        </span>
+                      </div>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                      <div>
+                        <span className="text-sm text-gray-500">इम्पैक्ट स्कोर</span>
+                        <div className="flex items-center space-x-2">
+                          <Progress value={issue.impactScore} className="flex-1 h-2" />
+                          <span className="text-sm font-bold">{issue.impactScore}</span>
+                        </div>
+                      </div>
+                      <div>
+                        <span className="text-sm text-gray-500">प्रभावित लोग</span>
+                        <p className="font-bold">{formatNumber(issue.affectedPeople || 0)}</p>
+                      </div>
+                      <div>
+                        <span className="text-sm text-gray-500">राज्य</span>
+                        <p className="font-bold">{issue.state || 'भारत'}</p>
+                      </div>
+                      <div>
+                        <span className="text-sm text-gray-500">प्राथमिकता</span>
+                        <Badge variant="outline">
+                          {issue.priority === 'high' ? 'उच्च' : 
+                           issue.priority === 'medium' ? 'मध्यम' : 'निम्न'}
+                        </Badge>
+                      </div>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      <Button variant="outline" size="sm">
+                        <Eye className="h-4 w-4 mr-2" />
+                        विस्तार
+                      </Button>
+                      <Button variant="outline" size="sm">
+                        <MessageCircle className="h-4 w-4 mr-2" />
+                        चर्चा
+                      </Button>
+                      <Button variant="outline" size="sm">
+                        <Share2 className="h-4 w-4 mr-2" />
+                        शेयर
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </TabsContent>
+
+          {/* Local Issues */}
+          <TabsContent value="local" className="space-y-4">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-semibold">स्थानीय शिकायतें</h3>
+              <Button>नई शिकायत दर्ज करें</Button>
+            </div>
+            <div className="grid gap-4">
+              {localReports.map((report) => (
+                <Card key={report.id} className="hover:shadow-md transition-shadow">
+                  <CardHeader className="pb-3">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center space-x-2 mb-2">
+                          <Badge variant="outline" className={
+                            report.status === 'verified' ? 'bg-green-100 text-green-800' :
+                            report.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                            'bg-gray-100 text-gray-800'
+                          }>
+                            {report.status === 'verified' ? 'सत्यापित' :
+                             report.status === 'pending' ? 'लंबित' : 'अन्य'}
+                          </Badge>
+                          <Badge variant="outline">
+                            <MapPin className="h-3 w-3 mr-1" />
+                            {report.city}, {report.state}
+                          </Badge>
+                        </div>
+                        <CardTitle className="text-lg mb-2">{report.title}</CardTitle>
+                        <p className="text-gray-600 text-sm">{report.description}</p>
+                      </div>
+                      <div className="flex flex-col items-end space-y-2">
+                        <div className="flex items-center space-x-1">
+                          <span className="text-sm font-bold">{report.upvotes}</span>
+                          <span className="text-xs text-gray-500">वोट</span>
+                        </div>
+                        <span className="text-sm text-gray-500">
+                          {formatDate(report.createdAt)}
+                        </span>
+                      </div>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-2 text-sm text-gray-500">
+                        <MapPin className="h-4 w-4" />
+                        <span>{report.area}, {report.city}</span>
+                      </div>
+                      <div className="flex space-x-2">
+                        <Button variant="outline" size="sm">विस्तार</Button>
+                        <Button variant="outline" size="sm">समर्थन करें</Button>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </TabsContent>
+
+          {/* Political Promises */}
+          <TabsContent value="promises" className="space-y-4">
+            <div className="flex justify-between items-center mb-4">
+              <div className="flex items-center space-x-4">
+                <h3 className="text-lg font-semibold">राजनीतिक वादे</h3>
+                <div className="text-sm text-gray-600 italic">"वादे याद हैं हमें!"</div>
+              </div>
+              <div className="flex items-center space-x-2">
+                <Select value={selectedParty} onValueChange={setSelectedParty}>
+                  <SelectTrigger className="w-32">
+                    <SelectValue placeholder="पार्टी" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">सभी पार्टियां</SelectItem>
+                    <SelectItem value="bjp">BJP</SelectItem>
+                    <SelectItem value="inc">Congress</SelectItem>
+                    <SelectItem value="aap">AAP</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+                  <SelectTrigger className="w-32">
+                    <SelectValue placeholder="श्रेणी" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">सभी श्रेणियां</SelectItem>
+                    <SelectItem value="economy">अर्थव्यवस्था</SelectItem>
+                    <SelectItem value="education">शिक्षा</SelectItem>
+                    <SelectItem value="farmers">किसान</SelectItem>
+                    <SelectItem value="women">महिलाएं</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Button>नया वादा रिपोर्ट करें</Button>
+              </div>
+            </div>
+            <div className="grid gap-4">
+              {promises.map((promise) => (
+                <Card key={promise.id} className="hover:shadow-md transition-shadow">
+                  <CardHeader className="pb-3">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center space-x-2 mb-2">
+                          <Building className="h-4 w-4" />
+                          <Badge variant="outline" className={getStatusColor(promise.status)}>
+                            {getStatusText(promise.status)}
+                          </Badge>
+                          <Badge variant="outline">
+                            {promise.party.shortName}
+                          </Badge>
+                          <Badge variant="outline">
+                            <Calendar className="h-3 w-3 mr-1" />
+                            {promise.electionYear}
+                          </Badge>
+                        </div>
+                        <CardTitle className="text-lg mb-2">{promise.title}</CardTitle>
+                        <p className="text-gray-600 text-sm mb-2">{promise.description}</p>
+                        {promise.leader && (
+                          <div className="flex items-center space-x-2 text-sm text-gray-500">
+                            <User className="h-3 w-3" />
+                            <span>{promise.leader.name}</span>
+                            {promise.leader.position && <span>• {promise.leader.position}</span>}
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex flex-col items-end space-y-2">
+                        <span className="text-sm text-gray-500">
+                          {formatDate(promise.promiseDate)}
+                        </span>
+                        <div className="flex items-center space-x-1 text-xs text-gray-500">
+                          <Vote className="h-3 w-3" />
+                          <span>{promise._count.votes}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                      <div>
+                        <span className="text-sm text-gray-500">पार्टी</span>
+                        <p className="font-bold">{promise.party.name}</p>
+                      </div>
+                      <div>
+                        <span className="text-sm text-gray-500">श्रेणी</span>
+                        <p className="font-bold">{promise.category}</p>
+                      </div>
+                      <div>
+                        <span className="text-sm text-gray-500">वोट</span>
+                        <p className="font-bold">{formatNumber(promise._count.votes)}</p>
+                      </div>
+                      <div>
+                        <span className="text-sm text-gray-500">कमेंट्स</span>
+                        <p className="font-bold">{promise._count.comments}</p>
+                      </div>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      <Button variant="outline" size="sm">
+                        <Eye className="h-4 w-4 mr-2" />
+                        विस्तार
+                      </Button>
+                      <Button variant="outline" size="sm">
+                        <Vote className="h-4 w-4 mr-2" />
+                        वोट करें
+                      </Button>
+                      <Button variant="outline" size="sm">
+                        <MessageCircle className="h-4 w-4 mr-2" />
+                        कमेंट
+                      </Button>
+                      <Button variant="outline" size="sm">
+                        <Bell className="h-4 w-4 mr-2" />
+                        याद दिलाएं
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </TabsContent>
+
+          {/* Timeline */}
+          <TabsContent value="timeline" className="space-y-4">
+            <Alert>
+              <Clock className="h-4 w-4" />
+              <AlertDescription>
+                टाइमलाइन दिखाती है कि मुद्दे कैसे विकसित हुए हैं और उन पर क्या कार्रवाई हुई है।
+              </AlertDescription>
+            </Alert>
+            <div className="space-y-4">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg">मुद्दा इतिहास</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    <div className="flex items-start space-x-4">
+                      <div className="w-3 h-3 bg-blue-500 rounded-full mt-1" />
+                      <div className="flex-1">
+                        <div className="flex items-center justify-between">
+                          <p className="font-medium">मुद्दा दर्ज किया गया</p>
+                          <span className="text-sm text-gray-500">15 जनवरी 2024</span>
+                        </div>
+                        <p className="text-sm text-gray-600">सरकारी अस्पतालों में डॉक्टरों की कमी की शिकायत दर्ज की गई</p>
+                      </div>
+                    </div>
+                    <div className="flex items-start space-x-4">
+                      <div className="w-3 h-3 bg-yellow-500 rounded-full mt-1" />
+                      <div className="flex-1">
+                        <div className="flex items-center justify-between">
+                          <p className="font-medium">जांच शुरू</p>
+                          <span className="text-sm text-gray-500">18 जनवरी 2024</span>
+                        </div>
+                        <p className="text-sm text-gray-600">स्वास्थ्य विभाग ने जांच शुरू की</p>
+                      </div>
+                    </div>
+                    <div className="flex items-start space-x-4">
+                      <div className="w-3 h-3 bg-orange-500 rounded-full mt-1" />
+                      <div className="flex-1">
+                        <div className="flex items-center justify-between">
+                          <p className="font-medium">चर्चा में</p>
+                          <span className="text-sm text-gray-500">20 जनवरी 2024</span>
+                        </div>
+                        <p className="text-sm text-gray-600">विधानसभा में मुद्दा उठाया गया</p>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+
+          {/* Accountability */}
+          <TabsContent value="accountability" className="space-y-4">
+            <Alert>
+              <CheckCircle className="h-4 w-4" />
+              <AlertDescription>
+                वादे और वास्तविक कार्रवाई का ट्रैकिंग - जानें कि क्या कहा गया और क्या किया गया।
+              </AlertDescription>
+            </Alert>
+            <div className="grid gap-4">
+              <Card>
+                <CardHeader>
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="text-lg">वादा vs वास्तविकता</CardTitle>
+                    <Badge className="bg-yellow-100 text-yellow-800">लंबित</Badge>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    <div>
+                      <h4 className="font-medium text-green-700">वादा</h4>
+                      <p className="text-sm text-gray-600">"3 महीने के अंदर सभी सरकारी अस्पतालों में डॉक्टरों की नियुक्ति की जाएगी"</p>
+                      <p className="text-xs text-gray-500">- स्वास्थ्य मंत्री, 1 जनवरी 2024</p>
+                    </div>
+                    <Separator />
+                    <div>
+                      <h4 className="font-medium text-red-700">वास्तविकता</h4>
+                      <p className="text-sm text-gray-600">अभी तक कोई नियुक्ति नहीं हुई, भर्ती प्रक्रिया शुरू नहीं हुई</p>
+                      <p className="text-xs text-gray-500">- आखिरी अपडेट: 20 जनवरी 2024</p>
+                    </div>
+                    <div className="flex space-x-2">
+                      <Button variant="outline" size="sm">विस्तार जानें</Button>
+                      <Button variant="outline" size="sm">रिमाइंडर सेट करें</Button>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+
+          {/* Dashboard */}
+          <TabsContent value="dashboard" className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+              <Card>
+                <CardContent className="p-6">
+                  <div className="flex items-center space-x-2">
+                    <FileText className="h-8 w-8 text-blue-600" />
+                    <div>
+                      <p className="text-sm font-medium text-gray-600">कुल मुद्दे</p>
+                      <p className="text-2xl font-bold">156</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="p-6">
+                  <div className="flex items-center space-x-2">
+                    <CheckCircle className="h-8 w-8 text-green-600" />
+                    <div>
+                      <p className="text-sm font-medium text-gray-600">हल हुए</p>
+                      <p className="text-2xl font-bold">42</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="p-6">
+                  <div className="flex items-center space-x-2">
+                    <Award className="h-8 w-8 text-orange-600" />
+                    <div>
+                      <p className="text-sm font-medium text-gray-600">कुल वादे</p>
+                      <p className="text-2xl font-bold">89</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="p-6">
+                  <div className="flex items-center space-x-2">
+                    <BarChart3 className="h-8 w-8 text-purple-600" />
+                    <div>
+                      <p className="text-sm font-medium text-gray-600">पूरे हुए</p>
+                      <p className="text-2xl font-bold">23</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+            
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg">पार्टी वार प्रदर्शन</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-2">
+                        <div className="w-3 h-3 bg-orange-500 rounded-full" />
+                        <span>BJP</span>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <div className="w-24 bg-gray-200 rounded-full h-2">
+                          <div className="bg-orange-500 h-2 rounded-full" style={{ width: '65%' }}></div>
+                        </div>
+                        <span className="text-sm font-medium">65%</span>
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-2">
+                        <div className="w-3 h-3 bg-blue-500 rounded-full" />
+                        <span>Congress</span>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <div className="w-24 bg-gray-200 rounded-full h-2">
+                          <div className="bg-blue-500 h-2 rounded-full" style={{ width: '45%' }}></div>
+                        </div>
+                        <span className="text-sm font-medium">45%</span>
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-2">
+                        <div className="w-3 h-3 bg-green-500 rounded-full" />
+                        <span>AAP</span>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <div className="w-24 bg-gray-200 rounded-full h-2">
+                          <div className="bg-green-500 h-2 rounded-full" style={{ width: '78%' }}></div>
+                        </div>
+                        <span className="text-sm font-medium">78%</span>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+              
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg">श्रेणी वार वितरण</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <span>अर्थव्यवस्था</span>
+                      <span className="text-sm font-medium">24 वादे</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span>शिक्षा</span>
+                      <span className="text-sm font-medium">18 वादे</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span>किसान</span>
+                      <span className="text-sm font-medium">15 वादे</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span>महिलाएं</span>
+                      <span className="text-sm font-medium">12 वादे</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span>बुनियादी ढांचा</span>
+                      <span className="text-sm font-medium">20 वादे</span>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+        </Tabs>
+      </main>
+
+      {/* Footer */}
+      <footer className="bg-white border-t mt-12">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+            <div>
+              <h3 className="font-semibold mb-4">असल मुद्दे</h3>
+              <p className="text-sm text-gray-600">
+                नागरिकों को वास्तविक सार्वजनिक मुद्दों की जानकारी देना और उन्हें याद दिलाना।
+              </p>
+            </div>
+            <div>
+              <h4 className="font-medium mb-4">विशेषताएं</h4>
+              <ul className="space-y-2 text-sm text-gray-600">
+                <li>दैनिक मुद्दे</li>
+                <li>स्थानीय शिकायतें</li>
+                <li>राजनीतिक वादे</li>
+                <li>जवाबदेही ट्रैकर</li>
+                <li>रिमाइंडर सिस्टम</li>
+              </ul>
+            </div>
+            <div>
+              <h4 className="font-medium mb-4">हमारे बारे में</h4>
+              <ul className="space-y-2 text-sm text-gray-600">
+                <li>हमारा मिशन</li>
+                <li>टीम</li>
+                <li>संपर्क करें</li>
+                <li>गोपनीयता नीति</li>
+              </ul>
+            </div>
+            <div>
+              <h4 className="font-medium mb-4">संपर्क</h4>
+              <p className="text-sm text-gray-600">
+                हमसे संपर्क करें: info@asalmudde.in<br />
+                फोन: 1800-123-4567
+              </p>
+            </div>
+          </div>
+          <div className="border-t mt-8 pt-8 text-center text-sm text-gray-600">
+            © 2024 असल मुद्दे. सर्वाधिकार सुरक्षित।
+          </div>
+        </div>
+      </footer>
     </div>
   )
 }

@@ -1,0 +1,186 @@
+/* PWA Styles */
+@media (display-mode: standalone) {
+  body {
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+  }
+  
+  /* Custom status bar for standalone mode */
+  .status-bar {
+    height: env(safe-area-inset-top);
+    background: linear-gradient(135deg, #ea580c 0%, #dc2626 100%);
+  }
+  
+  /* Bottom navigation for mobile */
+  @media (max-width: 768px) {
+    .mobile-nav {
+      padding-bottom: calc(1rem + env(safe-area-inset-bottom));
+    }
+  }
+}
+
+/* Touch-friendly interactions */
+@media (hover: none) and (pointer: coarse) {
+  button, 
+  .clickable,
+  [role="button"] {
+    min-height: 44px;
+    min-width: 44px;
+  }
+  
+  /* Larger touch targets for mobile */
+  .touch-target {
+    padding: 12px;
+    margin: 4px;
+  }
+  
+  /* Better mobile scrolling */
+  .scroll-container {
+    -webkit-overflow-scrolling: touch;
+    scroll-behavior: smooth;
+  }
+}
+
+/* Mobile-first responsive design */
+@media (max-width: 640px) {
+  .container {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+  
+  .grid-cols-2 {
+    grid-template-columns: repeat(1, 1fr);
+  }
+  
+  .grid-cols-3 {
+    grid-template-columns: repeat(1, 1fr);
+  }
+  
+  .grid-cols-4 {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  /* Mobile text sizes */
+  h1 { font-size: 1.5rem; }
+  h2 { font-size: 1.25rem; }
+  h3 { font-size: 1.125rem; }
+  
+  /* Mobile spacing */
+  .space-y-4 > * + * {
+    margin-top: 1rem;
+  }
+  
+  .space-y-6 > * + * {
+    margin-top: 1.5rem;
+  }
+}
+
+/* Tablet styles */
+@media (min-width: 641px) and (max-width: 1024px) {
+  .grid-cols-2 {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .grid-cols-3 {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .grid-cols-4 {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+/* Loading states */
+.loading-skeleton {
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: loading 1.5s infinite;
+}
+
+@keyframes loading {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* Pull-to-refresh indicator */
+.pull-to-refresh {
+  position: fixed;
+  top: -60px;
+  left: 50%;
+  transform: translateX(-50%);
+  transition: top 0.3s ease;
+  z-index: 1000;
+}
+
+.pull-to-refresh.active {
+  top: 20px;
+}
+
+/* Offline indicator */
+.offline-indicator {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #dc2626;
+  color: white;
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-size: 14px;
+  z-index: 1000;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.offline-indicator.show {
+  opacity: 1;
+}
+
+/* Mobile navigation bar */
+.mobile-nav-bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: white;
+  border-top: 1px solid #e5e7eb;
+  padding: 8px 0;
+  z-index: 50;
+  transform: translateY(0);
+  transition: transform 0.3s ease;
+}
+
+.mobile-nav-bar.hidden {
+  transform: translateY(100%);
+}
+
+/* Safe area handling for notched screens */
+@supports (padding: max(0px)) {
+  .mobile-nav-bar {
+    padding-bottom: max(8px, env(safe-area-inset-bottom));
+  }
+  
+  .header {
+    padding-top: max(0px, env(safe-area-inset-top));
+  }
+}
+
+/* Performance optimizations */
+.gpu-accelerated {
+  transform: translateZ(0);
+  will-change: transform;
+}
+
+/* Reduce motion for accessibility */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

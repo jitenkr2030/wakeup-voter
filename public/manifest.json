@@ -1,0 +1,77 @@
+{
+  "name": "WakeUp Voter - Political Accountability",
+  "short_name": "WakeUp Voter",
+  "description": "A comprehensive platform for tracking political promises, monitoring public issues, and ensuring government accountability",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#3B82F6",
+  "orientation": "portrait-primary",
+  "scope": "/",
+  "lang": "hi",
+  "categories": ["news", "social", "education", "politics"],
+  "icons": [
+    {
+      "src": "/logo.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/logo.svg",
+      "sizes": "192x192",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/logo.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Political Promises",
+      "short_name": "Promises",
+      "description": "Track political promises and their status",
+      "url": "/?tab=promises",
+      "icons": [{ "src": "/logo.svg", "sizes": "96x96" }]
+    },
+    {
+      "name": "Local Issues",
+      "short_name": "Issues",
+      "description": "View local issues and problems",
+      "url": "/?tab=local",
+      "icons": [{ "src": "/logo.svg", "sizes": "96x96" }]
+    },
+    {
+      "name": "Report Issue",
+      "short_name": "Report",
+      "description": "Report a new issue or problem",
+      "url": "/?tab=local&action=new",
+      "icons": [{ "src": "/logo.svg", "sizes": "96x96" }]
+    },
+    {
+      "name": "Dashboard",
+      "short_name": "Stats",
+      "description": "View performance dashboard",
+      "url": "/?tab=dashboard",
+      "icons": [{ "src": "/logo.svg", "sizes": "96x96" }]
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/screenshot-mobile.png",
+      "sizes": "360x640",
+      "type": "image/png",
+      "form_factor": "narrow"
+    },
+    {
+      "src": "/screenshot-desktop.png",
+      "sizes": "1280x720",
+      "type": "image/png",
+      "form_factor": "wide"
+    }
+  ]
+}
